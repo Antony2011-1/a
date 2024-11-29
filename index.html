@@ -1,0 +1,359 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Unified Admin Panel</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #6a1b9a;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+        }
+        .container {
+            background-color: rgba(255, 255, 255, 0.3);
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+            text-align: center;
+            width: 80%;
+            max-width: 600px;
+        }
+        .container h2, .container h3 {
+            margin-bottom: 20px;
+            color: #4a148c;
+        }
+        .container input[type="text"],
+        .container input[type="password"] {
+            width: 100%;
+            padding: 10px;
+            margin: 10px 0;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+        }
+        .container button {
+            background-color: #4a148c;
+            color: #fff;
+            padding: 10px 20px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            margin: 10px 0;
+        }
+        .container button:hover {
+            background-color: #6a1b9a;
+        }
+        .container a {
+            color: #4a148c;
+            text-decoration: none;
+        }
+        .container a:hover {
+            text-decoration: underline;
+        }
+        .container table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 20px 0;
+        }
+        .container table, th, td {
+            border: 1px solid #ccc;
+        }
+        .container th, td {
+            padding: 10px;
+            text-align: left;
+        }
+        .container th {
+            background-color: #4a148c;
+            color: white;
+        }
+    </style>
+</head>
+<body>
+    <div class="container" id="home">
+        <h2>Welcome</h2>
+        <a href="#register" onclick="navigateTo('register')">Register</a>
+        <a href="#login" onclick="navigateTo('login')">Login</a>
+        <a href="#admin-login" onclick="navigateTo('admin-login')">Admin Login</a>
+    </div>
+
+    <!-- Registration Form -->
+    <div class="container" id="register" style="display: none;">
+        <h2>Register</h2>
+        <form id="register-form">
+            <input type="text" id="username" placeholder="Username" required>
+            <input type="password" id="password" placeholder="Password" required>
+            <input type="password" id="confirm-password" placeholder="Confirm Password" required>
+            <input type="text" id="register-key" placeholder="Registration Key" required>
+            <br><br>
+            <button type="submit">Register</button>
+        </form>
+        <p>Already have an account? <a href="#login" onclick="navigateTo('login')">Login</a></p>
+    </div>
+
+    <!-- Login Form -->
+    <div class="container" id="login" style="display: none;">
+        <h2>Login</h2>
+        <form id="login-form">
+            <input type="text" id="login-username" placeholder="Username" required>
+            <input type="password" id="login-password" placeholder="Password" required>
+            <button type="submit">Login</button>
+        </form>
+        <p>Don't have an account? <a href="#register" onclick="navigateTo('register')">Register</a></p>
+    </div>
+
+    <!-- Admin Login Form -->
+    <div class="container" id="admin-login" style="display: none;">
+        <h2>Admin Login</h2>
+        <form id="admin-login-form">
+            <input type="text" id="admin-username" placeholder="Admin Username" required>
+            <input type="password" id="admin-password" placeholder="Admin Password" required>
+            <button type="submit">Login</button>
+        </form>
+    </div>
+
+    <!-- Admin Panel -->
+    <div class="container" id="admin-panel" style="display: none;">
+        <h2>Admin Panel</h2>
+        <button onclick="fetchUserCount()">Get User Count</button>
+        <p id="user-count"></p>
+        <hr>
+        <h3>Registered Users</h3>
+        <table>
+            <thead>
+                <tr>
+                    <th>Username</th>
+                    <th>Password</th>
+                    <th>HWID</th>
+                    <th>Action</th>
+                </tr>
+            </thead>
+            <tbody id="user-list">
+            </tbody>
+        </table>
+        <hr>
+        <form id="delete-user-form">
+            <input type="text" id="username-to-delete" placeholder="Username to delete" required>
+            <button type="submit">Delete User</button>
+        </form>
+        <p id="delete-status"></p>
+        <hr>
+        <h3>Used Registration Keys</h3>
+        <table>
+            <thead>
+                <tr>
+                    <th>Key</th>
+                    <th>Action</th>
+                </tr>
+            </thead>
+            <tbody id="key-list">
+            </tbody>
+        </table>
+    </div>
+
+    <script>
+        // Navegar entre secciones
+        function navigateTo(section) {
+            const sections = ['home', 'register', 'login', 'admin-login', 'admin-panel'];
+            sections.forEach(id => {
+                document.getElementById(id).style.display = (id === section) ? 'block' : 'none';
+            });
+        }
+
+        // Inicializar navegación
+        window.onload = function() {
+            navigateTo('home');
+            const savedUsername = localStorage.getItem('savedUsername');
+            const savedPassword = localStorage.getItem('savedPassword');
+            if (savedUsername && savedPassword) {
+                document.getElementById('login-username').value = savedUsername;
+                document.getElementById('login-password').value = savedPassword;
+            }
+        };
+
+        // Registro de usuario
+        document.getElementById('register-form').addEventListener('submit', function(event) {
+            event.preventDefault();
+            const username = document.getElementById('username').value;
+            const password = document.getElementById('password').value;
+            const confirmPassword = document.getElementById('confirm-password').value;
+            const registerKey = document.getElementById('register-key').value;
+
+            const validKeys = JSON.parse(localStorage.getItem('validKeys')) || ["KEY1", "KEY2", "KEY3"];
+            const usedKeys = JSON.parse(localStorage.getItem('usedKeys')) || [];
+            const users = JSON.parse(localStorage.getItem('users')) || [];
+
+            if (password === confirmPassword) {
+                if (validKeys.includes(registerKey) && !usedKeys.includes(registerKey)) {
+                    users.push({ username, password, hwid: '' });
+                    localStorage.setItem('users', JSON.stringify(users));
+                    usedKeys.push(registerKey);
+                    localStorage.setItem('usedKeys', JSON.stringify(usedKeys));
+
+                    const saveCredentials = confirm('Do you want to save your credentials?');
+                    if (saveCredentials) {
+                        localStorage.setItem('savedUsername', username);
+                        localStorage.setItem('savedPassword', password);
+                    }
+
+                    alert('Registered successfully!');
+                    navigateTo('login');
+                } else {
+                    alert('Wrong key or key already used!');
+                }
+            } else {
+                alert('Passwords do not match!');
+            }
+        });
+
+        // Inicio de sesión
+        document.getElementById('login-form').addEventListener('submit', function(event) {
+            event.preventDefault();
+            const username = document.getElementById('login-username').value;
+            const password = document.getElementById('login-password').value;
+
+            if (
+                (username === 'Admin' && password === 'admin123_56') ||
+                (username === 'flew' && password === '1234567891011121314151617181920')
+            ) {
+                sessionStorage.setItem('adminLoggedIn', 'true');
+                navigateTo('admin-panel');
+                return;
+            }
+
+            const users = JSON.parse(localStorage.getItem('users')) || [];
+            const user = users.find(user => user.username === username && user.password === password);
+
+            if (user) {
+                alert('Logged in successfully!');
+                navigateTo('home'); // Cambia 'home' por la sección a la que quieras redirigir después de iniciar sesión
+            } else {
+                alert('Invalid username or password!');
+            }
+        });
+
+        // Inicio de sesión del administrador
+        document.getElementById('admin-login-form').addEventListener('submit', function(event) {
+            event.preventDefault();
+            const username = document.getElementById('admin-username').value;
+            const[_{{{CITATION{{{_1{](https://github.com/bgoonz/web-dev-utils-package/tree/65a7b21c0444f4cbeb3c313a750fb43560047e77/personal-utilities%2Fcopy-2-clip%2FREADME.md)
+                const password = document.getElementById('admin-password').value;
+
+            if (
+                (username === 'Admin' && password === 'admin123_56') ||
+                (username === 'flew' && password === '1234567891011121314151617181920')
+            ) {
+                sessionStorage.setItem('adminLoggedIn', 'true');
+                navigateTo('admin-panel');
+                return;
+            } else {
+                alert('Invalid admin credentials!');
+            }
+        });
+
+        // Funciones del Panel de Administración
+
+        // Mostrar el conteo de usuarios
+        function fetchUserCount() {
+            const users = JSON.parse(localStorage.getItem('users')) || [];
+            document.getElementById('user-count').innerText = `Number of users: ${users.length}`;
+        }
+
+        // Mostrar la lista de usuarios
+        function fetchUserList() {
+            const users = JSON.parse(localStorage.getItem('users')) || [];
+            const userList = document.getElementById('user-list');
+
+            users.forEach(user => {
+                const row = document.createElement('tr');
+                const usernameCell = document.createElement('td');
+                const passwordCell = document.createElement('td');
+                const hwidCell = document.createElement('td');
+                const actionCell = document.createElement('td');
+                
+                usernameCell.innerText = user.username;
+                passwordCell.innerText = user.password;
+                hwidCell.innerText = user.hwid || 'N/A';
+                
+                const resetButton = document.createElement('button');
+                resetButton.innerText = 'Reset HWID';
+                resetButton.onclick = function() {
+                    resetHWID(user.username);
+                };
+                actionCell.appendChild(resetButton);
+                
+                row.appendChild(usernameCell);
+                row.appendChild(passwordCell);
+                row.appendChild(hwidCell);
+                row.appendChild(actionCell);
+                userList.appendChild(row);
+            });
+        }
+
+        // Manejar la eliminación de usuarios
+        document.getElementById('delete-user-form').addEventListener('submit', function(event) {
+            event.preventDefault();
+            const usernameToDelete = document.getElementById('username-to-delete').value;
+
+            let users = JSON.parse(localStorage.getItem('users')) || [];
+            users = users.filter(user => user.username !== usernameToDelete);
+            localStorage.setItem('users', JSON.stringify(users));
+
+            document.getElementById('delete-status').innerText = `User ${usernameToDelete} deleted successfully.`;
+            fetchUserCount();
+            document.getElementById('user-list').innerHTML = '';
+            fetchUserList();
+        });
+
+        // Manejar la eliminación de claves usadas
+        function deleteKey(key) {
+            let usedKeys = JSON.parse(localStorage.getItem('usedKeys')) || [];
+            usedKeys = usedKeys.filter(usedKey => usedKey !== key);
+            localStorage.setItem('usedKeys', JSON.stringify(usedKeys));
+            document.getElementById('key-list').innerHTML = '';
+            fetchKeyList();
+        }
+
+        // Mostrar la lista de claves usadas
+        function fetchKeyList() {
+            const usedKeys = JSON.parse(localStorage.getItem('usedKeys')) || [];
+            const keyList = document.getElementById('key-list');
+
+            usedKeys.forEach(key => {
+                const row = document.createElement('tr');
+                const keyCell = document.createElement('td');
+                const actionCell = document.createElement('td');
+                
+                keyCell.innerText = key;
+                const deleteButton = document.createElement('button');
+                deleteButton.innerText = 'Delete';
+                deleteButton.onclick = function() {
+                    deleteKey(key);
+                };
+                actionCell.appendChild(deleteButton);
+                
+                row.appendChild(keyCell);
+                row.appendChild(actionCell);
+                keyList.appendChild(row);
+            });
+        }
+
+        // Resetear HWID del usuario
+        function resetHWID(username) {
+            let users = JSON.parse(localStorage.getItem('users')) || [];
+            users = users.map(user => {
+                if (user.username === username) {
+                    user.hwid = '';
+                }
+                return user;
+            });
+            localStorage.setItem('users', JSON.stringify(users));
+            document.getElementById('user-list').innerHTML = '';
+            fetchUserList();
+        }
+    </script>
+</body>
+</html>
